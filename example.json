@@ -1,0 +1,24 @@
+{
+  "version": "14.11",
+  "loadlist": [
+    {
+      "name": "Syntax Skin",
+      "type": "CustomSkinAPI",
+      "root": "https://www.mcskins.gq/csl/"
+    },
+    {
+      "name": "Your Skin Server",
+      "type": "CustomSkinAPI",
+      "root": "http://server.mcskins.gq/"
+    }
+  ],
+  "enableDynamicSkull": false,
+  "enableTransparentSkin": false,
+  "ignoreHttpsCertificate": false,
+  "forceLoadAllTextures": false,
+  "enableCape": true,
+  "cacheExpiry": 0,
+  "enableUpdateSkull": true,
+  "enableLocalProfileCache": true,
+  "enableCacheAutoClean": true
+}
