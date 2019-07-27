@@ -12,6 +12,15 @@ int main() {
 		case JSON_INVALID:
 			std::cerr << "Error! Invalid JSON provided!";
 			return EXIT_FAILURE;
+		case JSON_IS_NUMBER:
+			std::cerr << "Error! Expecting object or array, not number!";
+			return EXIT_FAILURE;
+		case JSON_IS_BOOL:
+			std::cerr << "Error! Expecting object or array, not bool!";
+			return EXIT_FAILURE;
+		case JSON_IS_STRING:
+			std::cerr << "Error! Expecting object or array, not string!";
+			return EXIT_FAILURE;
 		default:
 			break;
 		}

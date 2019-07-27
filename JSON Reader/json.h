@@ -4,10 +4,14 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <algorithm>
 #include "utility.h"
 
 #define JSON_FILE_NOT_FOUND 19001
 #define JSON_INVALID 19002
+#define JSON_IS_NUMBER 19101
+#define JSON_IS_STRING 19102
+#define JSON_IS_BOOL 19103
 
 namespace JSON {
 
@@ -26,7 +30,7 @@ namespace JSON {
 			json = ss.str();
 			ss.clear();
 
-			replaceVoid();
+			clearVoid();
 			if (check() == JSON_INVALID) { error = JSON_INVALID; return; }
 			parts = getParts();
 			data = separate();
@@ -34,6 +38,9 @@ namespace JSON {
 
 			valid = true;
 		}
+
+		
+
 		bool isValid() { return valid; }
 		std::string getJsonText() { return json; }
 		std::map<std::string, std::string> getData() { return data; }
@@ -63,18 +70,64 @@ namespace JSON {
 		*/
 		int type = 0;
 
-		JSON(bool b) {
+		JSON(std::string json_c) {
+			json = json_c;
+			clearVoid();
+			type = getType();
+			if (type == JSON_INVALID) return;
 
+
+			valid = true;
 		}
 
 
 		int check() {
-			if (json[0] != '{' && json.back() != '}')
-				if (json[0] != '[' && json.back() != ']')
-					return JSON_INVALID;
-				else return 0;
+			if (isObject() || isArray()) return 0;
+			if (isInt()) return JSON_IS_NUMBER;
+			if (isBool()) return JSON_IS_BOOL;
+			if (isString()) return JSON_IS_STRING;
+			else return JSON_INVALID;
 		}
-		void replaceVoid() {
+
+		int getType() {
+			if (isObject()) return 0;
+			if (isArray()) return 1;
+			if (isString()) return 2;
+			if (isInt()) return 3;
+			if (isBool()) return 5;
+			if (isNull()) return -1;
+			else return JSON_INVALID;
+		}
+
+		bool isObject() {
+			if (json[0] != '{' && json.back() != '}') return true;
+			return false;
+		}
+		bool isArray() {
+			if (json[0] != '[' && json.back() != ']') return true;
+			return false;
+		}
+		bool isString() {
+			if (json[0] != '"' && json.back() != '"') return true;
+			return false;
+		}
+		bool isBool() {
+			if (json == "true" || json == "false") return true;
+			return false;
+		}
+		bool isInt()
+		{
+			return !json.empty() && std::find_if(json.begin(),
+				json.end(), [](char c) { return !std::isdigit(c); }) == json.end();
+		}
+		bool isNull()
+		{
+			if (json == "null") return true;
+			return false;
+		}
+		
+
+		void clearVoid() {
 			bool a = false;
 			std::ostringstream ss;
 			for (unsigned int i = 0; i < json.size(); i++) {
