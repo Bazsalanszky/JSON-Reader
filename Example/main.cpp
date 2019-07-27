@@ -2,7 +2,7 @@
 #include "json.h"
 
 int main() {
-	JSON::JSON json("../example.json");
+	JSON::JSON json("../example.json",true);
 	if (!json.isValid()) {
 		switch (json.getLastError())
 		{
