@@ -1,10 +1,10 @@
 #pragma once
 #include <fstream>
 #include <map>
-#include <unordered_map>
 #include <vector>
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <algorithm>
 
 #define JSON_FILE_NOT_FOUND 19001
@@ -17,19 +17,9 @@
 #define JSON_TYPE_ARRAY 1
 #define JSON_TYPE_STRING 2
 #define JSON_TYPE_INT 3
-#define JSON_TYPE_FLOAT 4
+#define JSON_TYPE_DOUBLE 4
 #define JSON_TYPE_BOOL 5
 #define JSON_TYPE_NULL -1
-
-/*Type codes
-0 = object
-1 = array
-2 = string
-3 = int
-4 = float
-5 = bool
--1 = null
-*/
 
 namespace JSON {
 
@@ -72,17 +62,20 @@ namespace JSON {
 		bool isValid() { return valid; }
 		std::string getJsonText() { return json; }
 		std::map<std::string, std::string> getData() { return data; }
-		std::map<std::string, JSON> getJmap() { return j_map; }
 
 		int getLastError() { return error; }
 		
 		JSON& operator[](const std::string& key)
 		{
-			return j_map.find(key)->second;
+			if (j_map.find(key) != j_map.end())
+				return j_map.at(key);
+			else { JSON j(""); return j; };
 		}
+		friend std::ostream& operator<<(std::ostream& os, JSON& js);
 
 		std::string dump(int t=0) {
 			std::ostringstream ss;
+			if (!isValid()) return std::to_string(JSON_INVALID);
 			for (std::map<std::string, JSON>::const_reverse_iterator mp = j_map.crbegin(); mp != j_map.crend(); mp++) {
 				JSON j = mp->second;
 				for (int i = 0; i < t; i++) ss << "\t";
@@ -92,12 +85,43 @@ namespace JSON {
 			return ss.str();
 		}
 
+		int getInt() {
+			if (type == JSON_TYPE_INT) return stoi(json);
+			else return 0;
+		}
+		double getDouble() {
+			if (type == JSON_TYPE_DOUBLE) return atof(json.c_str());
+			else return 0;
+		}
+		bool getBool() {
+			if (type == JSON_TYPE_DOUBLE) 
+				if (json == "true") return true;
+				else return false;
+			else return false;
+		}
+		JSON* getArray() {
+			JSON* result;
+			int i = 0;
+			for (std::map<std::string, JSON>::iterator mp = j_map.begin(); mp != j_map.end();mp++) {
+				result[i] = mp->second;
+				i++;
+			}
+		}
+		std::map<std::string, JSON> getJmap() { return j_map; }
+
+		std::string getString() {
+			if (type == JSON_TYPE_STRING) return json;
+			else return  "";
+		}
+		
+
 
 		int getType() {
 			if (isObject()) return JSON_TYPE_OBJECT;
 			if (isArray()) return JSON_TYPE_ARRAY;
 			if (isString()) return JSON_TYPE_STRING;
 			if (isInt()) return JSON_TYPE_INT;
+			if (isDouble()) return JSON_TYPE_DOUBLE;
 			if (isBool()) return JSON_TYPE_BOOL;
 			if (isNull()) return JSON_TYPE_NULL;
 			else return JSON_INVALID;
@@ -123,6 +147,16 @@ namespace JSON {
 		{
 			return !json.empty() && std::find_if(json.begin(),
 				json.end(), [](char c) { return !std::isdigit(c); }) == json.end();
+		}
+		bool isDouble()
+		{
+			const char* str = json.c_str();
+			char* endptr = 0;
+			strtod(str, &endptr);
+
+			if (*endptr != '\0' || endptr == str)
+				return false;
+			return true;
 		}
 		bool isNull()
 		{
@@ -255,4 +289,8 @@ namespace JSON {
 		}
 		
 	};
+	std::ostream& operator<<(std::ostream& os, JSON& js) {
+		os << js.getJsonText();
+		return os;
+	}
 }
