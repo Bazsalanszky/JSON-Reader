@@ -25,10 +25,7 @@ int main() {
 			break;
 		}
 	}
-	//std::cout << json.getJsonText();
-	std::map<std::string, std::string> p = json.getData();
-	for (std::map<std::string, std::string>::const_reverse_iterator mp = p.crbegin(); mp != p.crend();mp++) {
-		std::cout << mp->first << " " << p[mp->first] << std::endl;
-	}
+	std::cout << json.dump();
+	
 	return 0;
 }
