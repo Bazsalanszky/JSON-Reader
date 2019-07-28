@@ -18,13 +18,5 @@
     <ClInclude Include="json.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="utility.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="utility.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

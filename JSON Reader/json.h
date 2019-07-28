@@ -1,17 +1,35 @@
 #pragma once
 #include <fstream>
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <algorithm>
-#include "utility.h"
 
 #define JSON_FILE_NOT_FOUND 19001
 #define JSON_INVALID 19002
 #define JSON_IS_NUMBER 19101
 #define JSON_IS_STRING 19102
 #define JSON_IS_BOOL 19103
+
+#define JSON_TYPE_OBJECT 0
+#define JSON_TYPE_ARRAY 1
+#define JSON_TYPE_STRING 2
+#define JSON_TYPE_INT 3
+#define JSON_TYPE_FLOAT 4
+#define JSON_TYPE_BOOL 5
+#define JSON_TYPE_NULL -1
+
+/*Type codes
+0 = object
+1 = array
+2 = string
+3 = int
+4 = float
+5 = bool
+-1 = null
+*/
 
 namespace JSON {
 
@@ -32,8 +50,18 @@ namespace JSON {
 
 			clearVoid();
 			if (check() == JSON_INVALID) { error = JSON_INVALID; return; }
-			parts = getParts();
-			data = separate();
+			if (type == JSON_TYPE_ARRAY) {
+				parts = getParts();
+				for (int i = 0; i < parts.size(); i++) {
+
+					JSON j(parts[i]);
+					j_map.insert(std::make_pair(std::to_string(i), j));
+				}
+			}
+			if (type == JSON_TYPE_OBJECT) {
+				parts = getParts();
+				j_map = separate();
+			}
 
 
 			valid = true;
@@ -44,13 +72,64 @@ namespace JSON {
 		bool isValid() { return valid; }
 		std::string getJsonText() { return json; }
 		std::map<std::string, std::string> getData() { return data; }
+		std::map<std::string, JSON> getJmap() { return j_map; }
 
 		int getLastError() { return error; }
-
-		std::string& operator[](const std::string& key)
+		
+		JSON& operator[](const std::string& key)
 		{
-			return data[key];
+			return j_map.find(key)->second;
 		}
+
+		std::string dump(int t=0) {
+			std::ostringstream ss;
+			for (std::map<std::string, JSON>::const_reverse_iterator mp = j_map.crbegin(); mp != j_map.crend(); mp++) {
+				JSON j = mp->second;
+				for (int i = 0; i < t; i++) ss << "\t";
+				if (j.isArray() || j.isObject()) ss << mp->first << std::endl << j.dump(t+1);
+				else ss << mp->first << " " << j.getJsonText() << std::endl;
+			}
+			return ss.str();
+		}
+
+
+		int getType() {
+			if (isObject()) return JSON_TYPE_OBJECT;
+			if (isArray()) return JSON_TYPE_ARRAY;
+			if (isString()) return JSON_TYPE_STRING;
+			if (isInt()) return JSON_TYPE_INT;
+			if (isBool()) return JSON_TYPE_BOOL;
+			if (isNull()) return JSON_TYPE_NULL;
+			else return JSON_INVALID;
+		}
+
+		bool isObject() {
+			if (json[0] == '{' && json.back() == '}') return true;
+			return false;
+		}
+		bool isArray() {
+			if (json[0] == '[' && json.back() == ']') return true;
+			return false;
+		}
+		bool isString() {
+			if (json[0] == '"' && json.back() == '"') return true;
+			return false;
+		}
+		bool isBool() {
+			if (json == "true" || json == "false") return true;
+			return false;
+		}
+		bool isInt()
+		{
+			return !json.empty() && std::find_if(json.begin(),
+				json.end(), [](char c) { return !std::isdigit(c); }) == json.end();
+		}
+		bool isNull()
+		{
+			if (json == "null") return true;
+			return false;
+		}
+
 	private:
 
 		std::map<std::string, std::string> data;
@@ -75,8 +154,22 @@ namespace JSON {
 			clearVoid();
 			type = getType();
 			if (type == JSON_INVALID) return;
-
-
+			if (type == JSON_TYPE_ARRAY) {
+				parts = getParts();
+				for (int i = 0; i < parts.size(); i++) {
+					
+					JSON j(parts[i]);
+					j_map.insert(std::make_pair(std::to_string(i),j));
+				}
+			}
+			if (type == JSON_TYPE_OBJECT) {
+				parts = getParts();
+				j_map = separate();
+			}
+			if (type == JSON_TYPE_STRING) {
+				json.erase(0, 1);
+				json.erase(json.begin() + json.size() - 1);
+			}
 			valid = true;
 		}
 
@@ -87,45 +180,7 @@ namespace JSON {
 			if (isBool()) return JSON_IS_BOOL;
 			if (isString()) return JSON_IS_STRING;
 			else return JSON_INVALID;
-		}
-
-		int getType() {
-			if (isObject()) return 0;
-			if (isArray()) return 1;
-			if (isString()) return 2;
-			if (isInt()) return 3;
-			if (isBool()) return 5;
-			if (isNull()) return -1;
-			else return JSON_INVALID;
-		}
-
-		bool isObject() {
-			if (json[0] != '{' && json.back() != '}') return true;
-			return false;
-		}
-		bool isArray() {
-			if (json[0] != '[' && json.back() != ']') return true;
-			return false;
-		}
-		bool isString() {
-			if (json[0] != '"' && json.back() != '"') return true;
-			return false;
-		}
-		bool isBool() {
-			if (json == "true" || json == "false") return true;
-			return false;
-		}
-		bool isInt()
-		{
-			return !json.empty() && std::find_if(json.begin(),
-				json.end(), [](char c) { return !std::isdigit(c); }) == json.end();
-		}
-		bool isNull()
-		{
-			if (json == "null") return true;
-			return false;
-		}
-		
+		}		
 
 		void clearVoid() {
 			bool a = false;
@@ -152,9 +207,9 @@ namespace JSON {
 			std::vector<std::string> result;
 			std::string buf = "";
 			int fcount = 0;
+			
 			for (unsigned int i = 1; i < json.size() - 1; i++) {
 				char c = json[i];
-				//Out of index? Maybe later :P
 				if (c == '[' || c == '{') {
 					buf += c;
 					fcount++;
@@ -172,11 +227,12 @@ namespace JSON {
 				}
 				buf += c;
 			}
+			result.push_back(buf);
 			return result;
 		}
-
-		std::map<std::string, std::string> separate() {
-			std::map<std::string, std::string> result;
+		
+		std::map<std::string, JSON> separate() {
+			std::map<std::string, JSON> result;
 			for (unsigned int i = 0; i < parts.size(); i++) {
 				bool first = true;
 				std::string key = "", value = "";
@@ -192,9 +248,11 @@ namespace JSON {
 						value += s[j];
 					}
 				}
-				result[key] = value;
+				JSON j(value);
+				result.insert(std::make_pair(key,j));	
 			}
 			return result;
 		}
+		
 	};
 }

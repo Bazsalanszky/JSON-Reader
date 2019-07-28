@@ -124,10 +124,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="json.h" />
-    <ClInclude Include="utility.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="utility.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
